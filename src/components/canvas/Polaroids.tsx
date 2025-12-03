@@ -120,62 +120,58 @@ export const Polaroids = () => {
 
         // Only update if progress has changed significantly
         if (Math.abs(progress - prevProgress.current) < 0.0001) {
-            // Still need to animate floating if we want it?
-            // The floating is independent of progress. 
-            // Let's separate floating from layout update.
             groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
             return
         }
         prevProgress.current = progress
 
         // Interpolate between layouts based on progress
-        // progress: 1 = Formed (Spiral), 0 = Chaos (Linear)
         const t = progress
 
         // Update each photo
         groupRef.current.children.forEach((child, i) => {
-            // Skip the string mesh (last child usually, or check type)
             if (child === stringMeshRef.current) return
-            if (i >= layoutData.spiral.length) return // Safety
+            if (i >= layoutData.spiral.length) return
 
             const s = layoutData.spiral[i]
             const l = layoutData.linear[i]
 
-            // Position
             child.position.lerpVectors(l.pos, s.pos, t)
-
-            // Rotation
             child.rotation.x = THREE.MathUtils.lerp(l.rot.x, s.rot.x, t)
             child.rotation.y = THREE.MathUtils.lerp(l.rot.y, s.rot.y, t)
             child.rotation.z = THREE.MathUtils.lerp(l.rot.z, s.rot.z, t)
 
-            // Scale
             const currentScale = THREE.MathUtils.lerp(l.scale, s.scale, t)
             child.scale.setScalar(currentScale)
         })
 
-        // Update String
-        if (stringMeshRef.current) {
-            const points = []
-            for (let i = 0; i < layoutData.spiral.length; i++) {
-                const child = groupRef.current.children[i]
-                if (child === stringMeshRef.current) continue
+        // Update String with Safety Checks
+        if (stringMeshRef.current && groupRef.current) {
+            const points: THREE.Vector3[] = []
+            // Filter only PolaroidFrame children (exclude string mesh)
+            const polaroids = groupRef.current.children.filter(child => child !== stringMeshRef.current)
 
-                // String attachment point: slightly above center
-                // Local y=0.65 scaled by current scale
-                const currentScale = child.scale.x
-                const offset = new THREE.Vector3(0, 0.65 * currentScale, 0)
-                offset.applyEuler(child.rotation)
-                offset.add(child.position)
-                points.push(offset)
+            // Only generate string if we have enough polaroids mounted
+            if (polaroids.length > 0) {
+                for (let i = 0; i < polaroids.length; i++) {
+                    const child = polaroids[i]
+                    if (!child) continue
+
+                    const currentScale = child.scale.x
+                    const offset = new THREE.Vector3(0, 0.65 * currentScale, 0)
+                    offset.applyEuler(child.rotation)
+                    offset.add(child.position)
+                    points.push(offset)
+                }
+
+                if (points.length > 1) {
+                    const curve = new THREE.CatmullRomCurve3(points)
+                    if (stringMeshRef.current.geometry) stringMeshRef.current.geometry.dispose()
+                    stringMeshRef.current.geometry = new THREE.TubeGeometry(curve, 64, 0.02, 8, false)
+                }
             }
-
-            const curve = new THREE.CatmullRomCurve3(points)
-            if (stringMeshRef.current.geometry) stringMeshRef.current.geometry.dispose()
-            stringMeshRef.current.geometry = new THREE.TubeGeometry(curve, 64, 0.02, 8, false)
         }
 
-        // Floating animation (applied after layout update)
         groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
     })
 
@@ -186,7 +182,7 @@ export const Polaroids = () => {
                     <PolaroidFrame
                         key={i}
                         index={i}
-                        position={[0, 0, 0]} // Controlled by useFrame
+                        position={[0, 0, 0]}
                         rotation={[0, 0, 0]}
                         scale={[1, 1, 1]}
                     />
@@ -199,8 +195,8 @@ export const Polaroids = () => {
                     color="#FFD700"
                     metalness={1.0}
                     roughness={0.2}
-                    emissive="#B8860B"
-                    emissiveIntensity={0.2}
+                    emissive="#FFD700"
+                    emissiveIntensity={0.5}
                 />
             </mesh>
         </group>
