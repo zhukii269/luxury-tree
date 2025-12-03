@@ -1,4 +1,4 @@
-import { PerspectiveCamera } from '@react-three/drei'
+import { PerspectiveCamera, Environment, Lightformer } from '@react-three/drei'
 import { Foliage } from './Foliage'
 import { Ornaments } from './Ornaments'
 import { Star } from './Star'
@@ -15,30 +15,20 @@ export const Scene = () => {
         <>
             <PerspectiveCamera makeDefault position={[0, 4, 20]} fov={50} />
 
-            {/* Lighting Setup - Boosted to compensate for removed Environment */}
-            <ambientLight intensity={0.8} color="#F5F5DC" />
-            <hemisphereLight intensity={0.5} color="#FFFFFF" groundColor="#444444" />
+            {/* Procedural Studio Lighting - Replaces external HDR to prevent black screen */}
+            {/* This creates luxury reflections (Gold/Warm) without network dependencies */}
+            <Environment resolution={256}>
+                <group rotation={[-Math.PI / 3, 0, 1]}>
+                    <Lightformer form="circle" intensity={4} rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={2} />
+                    <Lightformer form="circle" intensity={2} rotation-y={Math.PI / 2} position={[-5, 1, -1]} scale={2} />
+                    <Lightformer form="circle" intensity={2} rotation-y={Math.PI / 2} position={[-5, -1, -1]} scale={2} />
+                    <Lightformer form="circle" intensity={2} rotation-y={-Math.PI / 2} position={[10, 1, 0]} scale={8} />
+                </group>
+            </Environment>
 
-            {/* Spotlight for dramatic top-down lighting */}
-            <spotLight
-                position={[0, 20, 0]}
-                angle={0.25}
-                penumbra={1}
-                intensity={3.0}
-                color="#FFF8E7" // Warm white
-                castShadow
-            />
-
-            <directionalLight
-                position={[5, 10, 7]}
-                intensity={2.0}
-                color="#FFFFFF"
-                castShadow
-            />
-
-            {/* City preset offers warmer, more complex reflections than lobby */}
-            {/* REMOVED: Causing network timeout on GitHub Pages (raw.githack.com blocked) */}
-            {/* <Environment preset="city" /> */}
+            <ambientLight intensity={0.5} color="#F5F5DC" />
+            <spotLight position={[0, 20, 0]} angle={0.25} penumbra={1} intensity={2.0} color="#FFF8E7" castShadow />
+            <directionalLight position={[5, 10, 7]} intensity={1.5} color="#FFFFFF" castShadow />
 
             <Foliage />
             <Ornaments />
