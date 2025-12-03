@@ -15,22 +15,23 @@ export const Scene = () => {
         <>
             <PerspectiveCamera makeDefault position={[0, 4, 20]} fov={50} />
 
-            {/* Lighting Setup */}
-            <ambientLight intensity={0.2} color="#F5F5DC" />
+            {/* Lighting Setup - Boosted to compensate for removed Environment */}
+            <ambientLight intensity={0.8} color="#F5F5DC" />
+            <hemisphereLight intensity={0.5} color="#FFFFFF" groundColor="#444444" />
 
             {/* Spotlight for dramatic top-down lighting */}
             <spotLight
                 position={[0, 20, 0]}
                 angle={0.25}
                 penumbra={1}
-                intensity={2.5}
+                intensity={3.0}
                 color="#FFF8E7" // Warm white
                 castShadow
             />
 
             <directionalLight
                 position={[5, 10, 7]}
-                intensity={0.5}
+                intensity={2.0}
                 color="#FFFFFF"
                 castShadow
             />
