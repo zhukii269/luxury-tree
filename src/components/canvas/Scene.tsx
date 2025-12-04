@@ -26,10 +26,11 @@ export const Scene = () => {
                 </group>
             </Environment>
 
-            <ambientLight intensity={0.5} color="#F5F5DC" />
+            <ambientLight intensity={0.8} color="#F5F5DC" />
             <spotLight position={[0, 20, 0]} angle={0.25} penumbra={1} intensity={2.0} color="#FFF8E7" castShadow />
             <directionalLight position={[5, 10, 7]} intensity={1.5} color="#FFFFFF" castShadow />
-            <pointLight position={[0, 2, 4]} intensity={1.5} color="#FFF5E0" distance={10} decay={2} />
+            <pointLight position={[0, 1, 5]} intensity={10} color="#FFF5E0" distance={15} decay={2} />
+            <hemisphereLight intensity={0.5} color="#ffffff" groundColor="#ffcc00" />
 
             <Foliage />
             <Ornaments />
