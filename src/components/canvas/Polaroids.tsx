@@ -4,13 +4,17 @@ import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { useStore } from '../../store/useStore'
 
-const PolaroidFrame = ({ position, rotation, scale, index }: any) => {
-    // Load texture based on index (1-14 repeating)
-    // Use BASE_URL for correct path in production (GitHub Pages)
-    const textureUrl = `${import.meta.env.BASE_URL}photos/${(index % 14) + 1}.jpg`
+// Dynamically import all photos from src/assets/photos
+const photoImports = import.meta.glob('/src/assets/photos/*.{jpg,png,jpeg,webp}', {
+    eager: true,
+    query: '?url',
+    import: 'default'
+})
+const photoUrls = Object.values(photoImports) as string[]
 
+const PolaroidFrame = ({ position, rotation, scale, url }: any) => {
     // useTexture will suspend if loading, handled by Suspense parent
-    const texture = useTexture(textureUrl)
+    const texture = useTexture(url) as THREE.Texture
 
     // Fix texture orientation if needed (often textures are flipped in GL)
     texture.flipY = true
@@ -46,12 +50,14 @@ export const Polaroids = () => {
     const groupRef = useRef<THREE.Group>(null!)
     const stringMeshRef = useRef<THREE.Mesh>(null!)
 
+    const count = photoUrls.length
 
     // Pre-calculate layouts
     const layoutData = useMemo(() => {
+        if (count === 0) return { spiral: [], linear: [] }
+
         const spiral = []
         const linear = []
-        const count = 18
 
         // --- Spiral Layout ---
         const heightStart = -4.0
@@ -59,10 +65,15 @@ export const Polaroids = () => {
         const heightRange = heightEnd - heightStart
 
         for (let i = 0; i < count; i++) {
-            const t = i / (count - 1)
+            // Safe division for t
+            const t = count > 1 ? i / (count - 1) : 0.5
+
             const h = heightStart + t * heightRange
+            // Tree radius: 5 at bottom (h=-4), 0 at top (h=4) approx relationship
             const treeRadius = 5 * (1 - (h + 6) / 12)
             const r = treeRadius + 1.2
+
+            // 3 full turns
             const angle = t * Math.PI * 2 * 3
 
             const x = r * Math.cos(angle)
@@ -88,7 +99,7 @@ export const Polaroids = () => {
         const radius = 11.0
         for (let i = 0; i < count; i++) {
             // Distribute evenly around the circle
-            const t = i / count
+            const t = count > 1 ? i / count : 0
             const angle = t * Math.PI * 2
 
             const x = radius * Math.cos(angle)
@@ -113,10 +124,10 @@ export const Polaroids = () => {
         }
 
         return { spiral, linear }
-    }, [])
+    }, [count])
 
     useFrame((state) => {
-        if (!groupRef.current) return
+        if (!groupRef.current || count === 0) return
 
         // Floating animation
         groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
@@ -145,7 +156,7 @@ export const Polaroids = () => {
         })
 
         // 2. Update String (Data-Driven)
-        if (stringMeshRef.current) {
+        if (stringMeshRef.current && count > 0) {
             const points: THREE.Vector3[] = []
 
             for (let i = 0; i < layoutData.spiral.length; i++) {
@@ -173,6 +184,7 @@ export const Polaroids = () => {
                 points.push(offset)
             }
 
+            // Need at least 2 points to make a curve
             if (points.length > 1) {
                 const curve = new THREE.CatmullRomCurve3(points)
                 if (stringMeshRef.current.geometry) stringMeshRef.current.geometry.dispose()
@@ -181,13 +193,15 @@ export const Polaroids = () => {
         }
     })
 
+    if (count === 0) return null
+
     return (
         <group ref={groupRef}>
             <Suspense fallback={null}>
-                {layoutData.spiral.map((_, i) => (
+                {photoUrls.map((url) => (
                     <PolaroidFrame
-                        key={i}
-                        index={i}
+                        key={url} // Using URL as unique key
+                        url={url}
                         position={[0, 0, 0]}
                         rotation={[0, 0, 0]}
                         scale={[1, 1, 1]}
